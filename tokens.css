@@ -1,0 +1,8 @@
+:root{
+  --bg:#F4F6F8; --panel:#FFFFFF; --sidebar:#172332; --sidebar-hover:#22344a;
+  --text:#202B38; --text-2:#718096; --border:#DCE2E8;
+  --primary:#356AE6; --success:#16845B; --danger:#D64545; --warning:#C58A22;
+  --radius:4px; --gap:12px; --pad:14px;
+  --font:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --sidebar-w:240px; --topbar-h:52px;
+}
