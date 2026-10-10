@@ -28,3 +28,20 @@ th.num,td.num{text-align:right}
 .chart{width:100%;height:auto;display:block}
 .chart text{font-size:10px;fill:var(--text-2)}
 .empty{padding:28px var(--pad);text-align:center;color:var(--text-2)}
+.small{font-size:12px}
+.btn{min-height:40px;padding:0 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);font-weight:600}
+.btn:hover{background:var(--bg)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-primary:hover{background:#2b58c4}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.qty{width:76px;min-height:40px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius);font:inherit;text-align:right;background:var(--panel);color:var(--text)}
+.row-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.toast{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:50;padding:12px 14px;border-radius:var(--radius);color:#fff;font-weight:600}
+.toast.ok{background:var(--success)} .toast.err{background:var(--danger)}
+@media(min-width:901px){.toast{left:auto;right:16px;bottom:16px;max-width:360px}}
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:var(--pad);min-height:56px}
+.switch-row input{width:22px;height:22px}
+body.compact td,body.compact th{padding:5px 10px}
+body.compact .panel-b,body.compact .kpi{padding:8px 10px}
+body.compact .kpi .value{font-size:20px}
