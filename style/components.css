@@ -45,3 +45,9 @@ th.num,td.num{text-align:right}
 body.compact td,body.compact th{padding:5px 10px}
 body.compact .panel-b,body.compact .kpi{padding:8px 10px}
 body.compact .kpi .value{font-size:20px}
+.map{display:block;width:100%;height:auto;background:#EEF2F5}
+.map [data-slot]{cursor:pointer;outline:none}
+.map [data-slot]:hover .ring,.map .sel .ring{stroke:var(--primary)}
+.map [data-slot]:focus-visible .ring{stroke:var(--primary);stroke-width:3}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:9px var(--pad);border-bottom:1px solid var(--border);font-size:14px}
+.kv strong{text-align:right}
