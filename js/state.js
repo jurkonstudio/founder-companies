@@ -1,34 +1,30 @@
-// FASE 1: seluruh data di bawah adalah DATA CONTOH untuk membangun UI.
-// Fase 2 akan menggantikannya dengan state ekonomi nyata.
-export const SAMPLE = true;
+// Sumber data tunggal. Semua halaman membaca objek `state` ini.
+export const CAP = 60; // kapasitas produksi per hari (unit)
 
-export const state = {
-  company: { name: 'Founder Co.', level: 1, reputation: 42 },
-  cash: 250000,
-  revenue: 48200,
-  expenses: 31650,
-  prev: { revenue: 44100, expenses: 30900 },
-  series: {
-    revenue:  [30, 34, 33, 38, 41, 40, 44, 46, 45, 48, 47, 48.2],
-    expenses: [24, 26, 27, 27, 29, 30, 30, 31, 31, 32, 31, 31.65]
-  },
-  market: [
-    ['10:00', 'Coffee Beans naik ke $4.20 (permintaan tinggi)'],
-    ['09:00', 'Steel Plate turun ke $11.80 (pasokan berlebih)'],
-    ['08:00', 'Packaging stabil di $2.05']
-  ],
-  npc: [
-    ['10:00', 'Nusantara Roasters memperluas kapasitas produksi'],
-    ['09:00', 'Apex Foods menurunkan harga Coffee Beans'],
-    ['07:00', 'Sinar Logam menahan ekspansi karena kas menipis']
-  ],
-  alerts: [
-    { tone: 'warning', text: 'Stok Packaging tersisa 120 unit (kurang dari 2 hari produksi)' },
-    { tone: 'danger', text: 'Biaya operasional naik 4,1% dibanding periode lalu' }
-  ],
-  production: [
-    { item: 'Coffee Beans', cap: 400, used: 320, cost: 3.1 },
-    { item: 'Ground Coffee', cap: 250, used: 180, cost: 5.4 },
-    { item: 'Packaged Coffee', cap: 200, used: 90, cost: 7.9 }
-  ]
+export const PRODUCTS = {
+  beans:  { name: 'Coffee Beans',  cat: 'Bahan baku',          ref: 4,    depth: 200 },
+  milk:   { name: 'Fresh Milk',    cat: 'Bahan baku',          ref: 2.5,  depth: 200 },
+  ground: { name: 'Ground Coffee', cat: 'Barang setengah jadi', ref: 11,   depth: 80 },
+  latte:  { name: 'Latte Pack',    cat: 'Barang jadi',         ref: 19,   depth: 60 }
 };
+
+// Resep: bahan per 1 unit hasil, dan biaya operasional per unit (dibayar kas).
+export const RECIPES = {
+  ground: { inputs: { beans: 2 }, fee: 1 },
+  latte:  { inputs: { ground: 1, milk: 1 }, fee: 1.5 }
+};
+
+export const state = {};
+export function setState(next) {
+  for (const k of Object.keys(state)) delete state[k];
+  Object.assign(state, next);
+}
+
+export function createState() {
+  const market = {}, inv = {};
+  for (const id in PRODUCTS) {
+    market[id] = { price: PRODUCTS[id].ref, stock: PRODUCTS[id].depth, room: PRODUCTS[id].depth };
+    inv[id] = { qty: 0, avg: 0 };
+  }
+  return { v: 1, day: 1, cash: 10000, seq: 0, used: 0, inv, market, ledger: [], worth: [10000], log: [], totals: { revenue: 0, cogs: 0 }, settings: { compact: false } };
+}
