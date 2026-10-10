@@ -7,7 +7,7 @@ const links = document.querySelectorAll('#nav a');
 
 function go() {
   const id = location.hash.slice(1);
-  const page = PAGES[id] ? id : 'dashboard';
+  const page = Object.hasOwn(PAGES, id) ? id : 'dashboard';
   view.innerHTML = renderPage(page);
   title.textContent = PAGES[page].title;
   document.title = PAGES[page].title + ' · Founder Companies';
