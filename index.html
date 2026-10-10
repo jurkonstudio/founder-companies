@@ -2,21 +2,24 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Founder Companies</title>
-<link rel="stylesheet" href="styles/tokens.css">
-<link rel="stylesheet" href="styles/base.css">
-<link rel="stylesheet" href="styles/layout.css">
-<link rel="stylesheet" href="styles/components.css">
-<link rel="stylesheet" href="styles/pages.css">
+<link rel="stylesheet" href="style/tokens.css">
+<link rel="stylesheet" href="style/base.css">
+<link rel="stylesheet" href="style/layout.css">
+<link rel="stylesheet" href="style/components.css">
+<link rel="stylesheet" href="style/pages.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <defs>
 <symbol id="i-dash" viewBox="0 0 24 24"><path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/></symbol>
-<symbol id="i-market" viewBox="0 0 24 24"><path d="M3 9l1-5h16l1 5M3 9v11h18V9M3 9h18M9 20v-6h6v6"/></symbol>
-<symbol id="i-prod" viewBox="0 0 24 24"><path d="M3 21V9l6 4V9l6 4V5h6v16zM7 17h2M13 17h2"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/></symbol>
 <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5zM3 8v8l9 5 9-5V8M12 13v8"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+<symbol id="i-exch" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></symbol>
+<symbol id="i-prod" viewBox="0 0 24 24"><path d="M3 21V9l6 4V9l6 4V5h6v16zM7 17h2M13 17h2"/></symbol>
 <symbol id="i-fin" viewBox="0 0 24 24"><path d="M3 20h18M6 16V10M11 16V6M16 16v-4M21 16V8"/></symbol>
 <symbol id="i-res" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3M7.5 15h9"/></symbol>
 <symbol id="i-comp" viewBox="0 0 24 24"><path d="M4 21V5l8-2v18M12 9l8 2v10M8 8h0M8 12h0M8 16h0M16 15h0M16 18h0"/></symbol>
@@ -24,40 +27,54 @@
 <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 4h13v16H6a2 2 0 01-2-2zM17 8h3v10a2 2 0 01-2 2M8 8h5M8 12h5M8 16h5"/></symbol>
 <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
 <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
 <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18h0"/></symbol>
 </defs>
 </svg>
 
 <div class="app" id="app">
-  <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
+  <aside class="sidebar" id="sidebar" aria-label="Menu utama">
     <div class="brand"><span class="brand-mark">FC</span><span>Founder Companies</span></div>
     <nav id="nav">
-      <div class="nav-group">Operasi</div>
-      <a href="#dashboard" data-page="dashboard"><svg class="ic"><use href="#i-dash"/></svg>Dashboard</a>
-      <a href="#marketplace" data-page="marketplace"><svg class="ic"><use href="#i-market"/></svg>Marketplace</a>
-      <a href="#production" data-page="production"><svg class="ic"><use href="#i-prod"/></svg>Production</a>
-      <a href="#inventory" data-page="inventory"><svg class="ic"><use href="#i-box"/></svg>Inventory</a>
+      <div class="nav-group">Utama</div>
+      <a href="#map" data-page="map"><svg class="ic"><use href="#i-map"/></svg>Map</a>
+      <a href="#warehouse" data-page="warehouse"><svg class="ic"><use href="#i-box"/></svg>Warehouse</a>
+      <a href="#search" data-page="search"><svg class="ic"><use href="#i-search"/></svg>Search</a>
+      <a href="#chat" data-page="chat"><svg class="ic"><use href="#i-chat"/></svg>Chat</a>
+      <a href="#exchange" data-page="exchange"><svg class="ic"><use href="#i-exch"/></svg>Exchange</a>
       <div class="nav-group">Bisnis</div>
-      <a href="#finance" data-page="finance"><svg class="ic"><use href="#i-fin"/></svg>Finance</a>
+      <a href="#dashboard" data-page="dashboard"><svg class="ic"><use href="#i-dash"/></svg>Dashboard</a>
+      <a href="#production" data-page="production"><svg class="ic"><use href="#i-prod"/></svg>Production</a>
       <a href="#research" data-page="research"><svg class="ic"><use href="#i-res"/></svg>Research</a>
+      <a href="#finance" data-page="finance"><svg class="ic"><use href="#i-fin"/></svg>Finance</a>
+      <div class="nav-group">Lainnya</div>
       <a href="#companies" data-page="companies"><svg class="ic"><use href="#i-comp"/></svg>Companies</a>
       <a href="#profile" data-page="profile"><svg class="ic"><use href="#i-user"/></svg>Company Profile</a>
-      <div class="nav-group">Dunia</div>
       <a href="#news" data-page="news"><svg class="ic"><use href="#i-news"/></svg>News &amp; Events</a>
       <a href="#settings" data-page="settings"><svg class="ic"><use href="#i-gear"/></svg>Settings</a>
     </nav>
-    <div class="sidebar-foot">v0.1 · Fase 1</div>
+    <div class="sidebar-foot">v0.2 · Tahap B</div>
   </aside>
   <div class="scrim" id="scrim"></div>
 
   <div class="shell">
     <header class="topbar">
-      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Buka menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Buka menu" aria-controls="sidebar" aria-expanded="false"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <button class="icon-btn" id="backBtn" aria-label="Kembali" hidden><svg class="ic"><use href="#i-back"/></svg></button>
       <h1 id="pageTitle">Dashboard</h1>
-      <span class="badge badge-warn">DATA CONTOH</span>
+      <a class="icon-btn" href="#search" aria-label="Cari"><svg class="ic"><use href="#i-search"/></svg></a>
+      <a class="avatar" href="#profile" aria-label="Profil perusahaan">FC</a>
     </header>
     <main id="view" tabindex="-1"></main>
   </div>
+
+  <nav class="bottomnav" id="bottomnav" aria-label="Navigasi bawah">
+    <a href="#map" data-page="map"><svg class="ic"><use href="#i-map"/></svg><span>Map</span></a>
+    <a href="#warehouse" data-page="warehouse"><svg class="ic"><use href="#i-box"/></svg><span>Warehouse</span></a>
+    <a href="#search" data-page="search"><svg class="ic"><use href="#i-search"/></svg><span>Search</span></a>
+    <a href="#chat" data-page="chat"><svg class="ic"><use href="#i-chat"/></svg><span>Chat</span></a>
+    <a href="#exchange" data-page="exchange"><svg class="ic"><use href="#i-exch"/></svg><span>Exchange</span></a>
+  </nav>
 </div>
 <script type="module" src="js/main.js"></script>
 </body>
