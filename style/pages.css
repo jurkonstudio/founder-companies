@@ -9,3 +9,11 @@
 }
 .page-note{margin-bottom:var(--gap);font-size:13px;color:var(--text-2)}
 .plan{margin:0;padding:0 0 0 18px;line-height:1.8}
+.quick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:var(--gap)}
+.btn-link{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);font-weight:600}
+.btn-link:hover{background:var(--bg)}
+.btn-link:active{background:var(--border)}
+.search-input{width:100%;min-height:44px;padding:0 12px;margin-bottom:var(--gap);border:1px solid var(--border);border-radius:var(--radius);font:inherit;color:var(--text);background:var(--panel)}
+.result{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:0 var(--pad);border-bottom:1px solid var(--border)}
+.result:last-child{border-bottom:0}
+.result:hover{background:var(--bg)}
