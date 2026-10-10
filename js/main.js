@@ -1,7 +1,8 @@
 import { PAGES, renderPage, searchResults } from './ui.js';
 import { state, setState, createState, PRODUCTS } from './state.js';
 import { load, save, wipe, canSave } from './save.js';
-import { trade, produce, nextDay } from './economy.js';
+import { trade, produce, nextDay, build } from './economy.js';
+import { setSel } from './map.js';
 import { m2 } from './utils.js';
 
 setState(load(createState));
@@ -73,6 +74,8 @@ function done(r) {
 }
 
 view.addEventListener('click', (e) => {
+  const sl = e.target.closest('[data-slot]');
+  if (sl) { setSel(sl.dataset.slot); return go(true); }
   const b = e.target.closest('[data-act]');
   if (!b) return;
   const { act, id } = b.dataset;
@@ -83,12 +86,18 @@ view.addEventListener('click', (e) => {
     done(trade(act, id, n));
   } else if (act === 'produce') {
     done(produce(id, qty('r:' + id)));
+  } else if (act === 'build') {
+    done(build(id));
   } else if (act === 'nextday') {
     nextDay(); done({ ok: true, msg: `Hari ${state.day} dimulai.` });
   } else if (act === 'reset') {
     if (!confirm('Reset game? Semua progres di perangkat ini akan dihapus dan tidak bisa dikembalikan.')) return;
     wipe(); setState(createState()); save(state); done({ ok: true, msg: 'Game direset.' });
   }
+});
+view.addEventListener('keydown', (e) => {
+  const sl = e.target.closest && e.target.closest('[data-slot]');
+  if (sl && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setSel(sl.dataset.slot); go(true); }
 });
 view.addEventListener('change', (e) => {
   if (e.target.dataset.set === 'compact') {

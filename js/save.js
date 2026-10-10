@@ -1,4 +1,4 @@
-import { PRODUCTS } from './state.js';
+import { PRODUCTS, BTYPES } from './state.js';
 const KEY = 'fc_save';
 let ok = true;
 export const canSave = () => ok;
@@ -7,6 +7,7 @@ function valid(d) {
   if (!d || typeof d !== 'object' || d.v !== 1) return false;
   if (!Number.isFinite(d.cash) || d.cash < 0 || !Array.isArray(d.ledger) || !Array.isArray(d.worth) || !Array.isArray(d.log)) return false;
   if (!d.totals || !d.settings || !d.inv || !d.market) return false;
+  if (d.buildings && !Object.values(d.buildings).every((b) => b && BTYPES[b.type] && Number.isFinite(b.paid))) return false;
   return Object.keys(PRODUCTS).every((id) => d.inv[id] && Number.isFinite(d.inv[id].qty) && d.inv[id].qty >= 0 && d.market[id] && Number.isFinite(d.market[id].price));
 }
 
@@ -16,7 +17,7 @@ export function load(fresh) {
     if (!raw) return fresh();
     let d = null;
     try { d = JSON.parse(raw); } catch (e) { d = null; }
-    if (valid(d)) return d;
+    if (valid(d)) { if (!d.buildings) d.buildings = fresh().buildings; return d; } // migrasi save lama
     localStorage.setItem(KEY + '_corrupt', raw); // simpan cadangan, jangan dibuang
     return fresh();
   } catch (e) { ok = false; return fresh(); }

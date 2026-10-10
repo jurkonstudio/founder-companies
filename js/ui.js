@@ -1,11 +1,12 @@
-import { state, PRODUCTS, RECIPES, CAP } from './state.js';
+import { state, PRODUCTS, RECIPES, BTYPES, capacity } from './state.js';
+import { mapPage } from './map.js';
 import { worth, profit, maxProduce } from './economy.js';
 import { canSave } from './save.js';
 import { money, m2, r2, esc, tone } from './utils.js';
 
 export const PAGES = {
   dashboard: { title: 'Dashboard', kw: 'ringkasan kas laba pendapatan' },
-  map: { title: 'Map', tahap: 'Berikutnya', kw: 'peta bangunan kantor pabrik', plan: ['Grid bangunan: kantor pusat, produksi, gudang', 'Ketuk bangunan untuk detail dan aksi'], go: ['warehouse', 'production'] },
+  map: { title: 'Map', kw: 'peta bangunan kantor pabrik lahan bangun' },
   warehouse: { title: 'Warehouse', kw: 'gudang stok inventaris persediaan' },
   search: { title: 'Search', kw: 'cari pencarian' },
   chat: { title: 'Chat', kw: 'pesan aktivitas komunikasi' },
@@ -23,7 +24,7 @@ const kpi = (label, value, sub, cls = '') => `<div class="panel kpi"><div class=
 const feed = (rows) => rows.length ? `<ul class="feed">${rows.map(([d, m]) => `<li><time>Hari ${d}</time><span>${esc(m)}</span></li>`).join('')}</ul>` : '<div class="empty">Belum ada aktivitas.</div>';
 const quick = (ids) => `<div class="quick">${ids.map((i) => `<a class="btn-link" href="#${i}">${esc(PAGES[i].title)}</a>`).join('')}</div>`;
 const invValue = () => r2(Object.values(state.inv).reduce((a, i) => a + i.qty * i.avg, 0));
-const TYPE = { buy: 'Beli', sell: 'Jual', production: 'Produksi' };
+const TYPE = { buy: 'Beli', sell: 'Jual', production: 'Produksi', build: 'Bangun' };
 const sign = (n) => (n >= 0 ? '+' : '') + m2(n);
 
 function chart(vals) {
@@ -42,9 +43,9 @@ function dashboard() {
   const alerts = [];
   if (s.cash < 500) alerts.push(['danger', 'Kas menipis: ' + m2(s.cash)]);
   for (const id in PRODUCTS) { const q = s.inv[id].qty; if (q > 0 && q < 10) alerts.push(['warning', `Stok ${PRODUCTS[id].name} rendah (${q} unit)`]); }
-  if (s.used >= CAP) alerts.push(['warning', 'Kapasitas produksi hari ini habis']);
+  if (s.used >= capacity()) alerts.push(['warning', 'Kapasitas produksi hari ini habis']);
   const inv = Object.entries(PRODUCTS).filter(([id]) => s.inv[id].qty > 0).map(([id, pr]) => `<tr><td>${esc(pr.name)}</td><td class="num">${s.inv[id].qty}</td><td class="num">${m2(s.inv[id].qty * s.inv[id].avg)}</td></tr>`).join('');
-  return `${quick(['exchange', 'production', 'warehouse', 'finance'])}
+  return `${quick(['map', 'exchange', 'production', 'warehouse', 'finance'])}
   <div class="grid grid-kpi">
     ${kpi('Kas', m2(s.cash), 'Saldo saat ini')}
     ${kpi('Pendapatan', m2(s.totals.revenue), 'Total penjualan')}
@@ -63,7 +64,7 @@ function dashboard() {
 
 function warehouse() {
   const rows = Object.entries(PRODUCTS).map(([id, p]) => { const i = state.inv[id]; return `<tr><td><strong>${esc(p.name)}</strong><div class="muted small">${esc(p.cat)}${i.qty > 0 && i.qty < 10 ? ' · <span class="neg">Stok rendah</span>' : ''}</div></td><td class="num">${i.qty}</td><td class="num">${m2(i.avg)}</td><td class="num">${m2(i.qty * i.avg)}</td></tr>`; }).join('');
-  const hist = state.ledger.slice(0, 10).map((e) => `<li><time>Hari ${e.day}</time><span>${TYPE[e.type]} ${e.type === 'sell' ? '-' : '+'}${e.qty} ${esc(PRODUCTS[e.pid].name)}<br><span class="muted small">${esc(e.note)}</span></span></li>`).join('');
+  const hist = state.ledger.filter((e) => e.pid).slice(0, 10).map((e) => `<li><time>Hari ${e.day}</time><span>${TYPE[e.type]} ${e.type === 'sell' ? '-' : '+'}${e.qty} ${esc(PRODUCTS[e.pid].name)}<br><span class="muted small">${esc(e.note)}</span></span></li>`).join('');
   const empty = Object.values(state.inv).every((i) => i.qty === 0);
   return `${quick(['exchange', 'production'])}
   <section class="panel" style="margin-bottom:12px"><div class="panel-h"><h2>Persediaan</h2><span class="muted small">Nilai ${m2(invValue())}</span></div>${empty ? '<div class="empty">Gudang kosong. Beli bahan baku di Exchange.</div>' : ''}<div class="table-wrap"><table><thead><tr><th>Produk</th><th class="num">Stok</th><th class="num">Biaya rata-rata</th><th class="num">Nilai</th></tr></thead><tbody>${rows}</tbody></table></div></section>
@@ -78,20 +79,20 @@ function exchange() {
 
 function production() {
   const rows = Object.entries(RECIPES).map(([rid, r]) => { const mx = maxProduce(rid); const need = Object.entries(r.inputs).map(([k, v]) => `${v} ${PRODUCTS[k].name}`).join(' + '); return `<tr><td><strong>${esc(PRODUCTS[rid].name)}</strong><div class="muted small">${esc(need)} · biaya ${m2(r.fee)}/unit</div>${mx.n < 1 ? `<div class="neg small">${mx.why}</div>` : ''}</td><td class="num">${mx.n}</td><td><div class="row-actions"><input class="qty" type="number" inputmode="numeric" min="1" step="1" value="1" data-qty="r:${rid}" aria-label="Jumlah ${esc(PRODUCTS[rid].name)}"><button class="btn btn-primary" data-act="produce" data-id="${rid}"${mx.n < 1 ? ' disabled' : ''}>Produksi</button></div></td></tr>`; }).join('');
-  return `${quick(['exchange', 'warehouse'])}<section class="panel"><div class="panel-h"><h2>Roastery</h2><span class="muted small">Kapasitas hari ini ${state.used}/${CAP}</span></div><div class="table-wrap"><table><thead><tr><th>Resep</th><th class="num">Maks</th><th class="num">Jumlah</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  return `${quick(['exchange', 'warehouse'])}<section class="panel"><div class="panel-h"><h2>Roastery</h2><span class="muted small">Kapasitas hari ini ${state.used}/${capacity()}</span></div><div class="table-wrap"><table><thead><tr><th>Resep</th><th class="num">Maks</th><th class="num">Jumlah</th></tr></thead><tbody>${rows}</tbody></table></div></section>
   <p class="page-note" style="margin-top:12px">Produksi memakai bahan dari Warehouse dan menambah hasilnya ke Warehouse. Kapasitas pulih saat Hari berikutnya di Exchange.</p>`;
 }
 
 function finance() {
   const s = state, p = profit();
-  const rows = s.ledger.slice(0, 30).map((e) => `<tr><td>${e.day}</td><td>${TYPE[e.type]}</td><td>${esc(PRODUCTS[e.pid].name)}</td><td class="num">${e.qty}</td><td class="num ${tone(e.amount)}">${sign(e.amount)}</td><td class="num">${m2(e.cash)}</td></tr>`).join('');
+  const rows = s.ledger.slice(0, 30).map((e) => `<tr><td>${e.day}</td><td>${TYPE[e.type]}</td><td>${e.pid ? esc(PRODUCTS[e.pid].name) : esc(e.note)}</td><td class="num">${e.pid ? e.qty : ''}</td><td class="num ${tone(e.amount)}">${sign(e.amount)}</td><td class="num">${m2(e.cash)}</td></tr>`).join('');
   return `<div class="grid grid-kpi">
     ${kpi('Kas', m2(s.cash), 'Saldo saat ini')}
     ${kpi('Pendapatan', m2(s.totals.revenue), 'Total penjualan')}
     ${kpi('HPP', m2(s.totals.cogs), 'Biaya barang terjual')}
     ${kpi('Laba', m2(p), 'Pendapatan - HPP', tone(p))}
   </div>
-  <p class="page-note">Pembelian bahan dan biaya produksi masuk ke persediaan (nilai ${m2(invValue())}) dan baru menjadi biaya (HPP) saat barang terjual, memakai biaya rata-rata.</p>
+  <p class="page-note">Pembelian bahan dan biaya produksi masuk ke persediaan (nilai ${m2(invValue())}) dan baru menjadi biaya (HPP) saat barang terjual, memakai biaya rata-rata. Biaya bangunan adalah aset, bukan HPP.</p>
   <section class="panel"><div class="panel-h"><h2>Riwayat transaksi</h2></div>${rows ? `<div class="table-wrap"><table><thead><tr><th>Hari</th><th>Jenis</th><th>Produk</th><th class="num">Jml</th><th class="num">Kas</th><th class="num">Saldo</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">Belum ada transaksi.</div>'}</section>`;
 }
 
@@ -116,13 +117,16 @@ export function searchResults(q) {
   if (!t) return '<div class="panel"><div class="empty">Ketik untuk mencari produk, halaman, dan fitur.</div></div>';
   const prods = Object.entries(PRODUCTS).filter(([id, p]) => (p.name + ' ' + p.cat + ' ' + id).toLowerCase().includes(t));
   const pages = Object.entries(PAGES).filter(([id, p]) => (p.title + ' ' + (p.kw || '') + ' ' + id).toLowerCase().includes(t));
-  if (!prods.length && !pages.length) return `<div class="panel"><div class="empty">Tidak ditemukan hasil untuk "${esc(q.trim())}".</div></div>`;
+  const blds = SLOTS_ENTRIES().filter(([, b]) => (BTYPES[b.type].name + ' bangunan').toLowerCase().includes(t));
+  if (!prods.length && !pages.length && !blds.length) return `<div class="panel"><div class="empty">Tidak ditemukan hasil untuk "${esc(q.trim())}".</div></div>`;
   const grp = (h, items) => items ? `<section class="panel" style="margin-bottom:12px"><div class="panel-h"><h2>${h}</h2></div>${items}</section>` : '';
   return grp('Produk (' + prods.length + ')', prods.map(([id, p]) => `<a class="result" href="#exchange"><span>${esc(p.name)}</span><span class="muted small">${esc(p.cat)} · stok ${state.inv[id].qty}</span></a>`).join('')) +
+    grp('Bangunan (' + blds.length + ')', blds.map(([id, b]) => `<a class="result" href="#map"><span>${esc(BTYPES[b.type].name)}</span><span class="muted small">Level ${b.level}</span></a>`).join('')) +
     grp('Halaman (' + pages.length + ')', pages.map(([id, p]) => `<a class="result" href="#${id}"><span>${esc(p.title)}</span><span class="muted small">${p.tahap ? 'Belum tersedia' : 'Tersedia'}</span></a>`).join(''));
 }
 
-const VIEWS = { dashboard, warehouse, exchange, production, finance, settings, search, chat };
+const SLOTS_ENTRIES = () => Object.entries(state.buildings);
+const VIEWS = { map: mapPage, dashboard, warehouse, exchange, production, finance, settings, search, chat };
 export function renderPage(id) {
   if (!Object.hasOwn(PAGES, id)) return dashboard();
   return VIEWS[id] ? VIEWS[id]() : placeholder(PAGES[id]);

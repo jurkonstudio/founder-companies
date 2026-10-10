@@ -1,4 +1,4 @@
-import { state, PRODUCTS, RECIPES, CAP } from './state.js';
+import { state, PRODUCTS, RECIPES, SLOTS, BTYPES, capacity } from './state.js';
 import { save } from './save.js';
 import { r2, m2 } from './utils.js';
 
@@ -7,7 +7,7 @@ const clamp = (p, ref) => Math.min(ref * 2.5, Math.max(ref * 0.4, p));
 const fail = (msg) => ({ ok: false, msg });
 const okQty = (q) => Number.isInteger(q) && q >= 1 && q <= 10000;
 
-export const worth = () => r2(state.cash + Object.values(state.inv).reduce((a, i) => a + i.qty * i.avg, 0));
+export const worth = () => r2(state.cash + Object.values(state.inv).reduce((a, i) => a + i.qty * i.avg, 0) + Object.values(state.buildings).reduce((a, b) => a + b.paid, 0));
 export const profit = () => r2(state.totals.revenue - state.totals.cogs);
 
 function log(msg) { state.log.unshift([state.day, msg]); if (state.log.length > 40) state.log.length = 40; }
@@ -56,7 +56,7 @@ export function trade(side, id, qty, commit = true) {
 
 export function maxProduce(rid) {
   const r = RECIPES[rid];
-  let n = CAP - state.used, why = n < 1 ? 'Kapasitas harian habis' : '';
+  let n = capacity() - state.used, why = n < 1 ? 'Kapasitas harian habis' : '';
   for (const [k, need] of Object.entries(r.inputs)) { const c = Math.floor(state.inv[k].qty / need); if (c < n) { n = c; why = 'Bahan kurang'; } }
   const c = Math.floor(state.cash / r.fee); if (c < n) { n = c; why = 'Kas kurang'; }
   return { n: Math.max(0, n), why: n < 1 ? why : '' };
@@ -66,7 +66,7 @@ export function produce(rid, qty) {
   const r = RECIPES[rid], out = state.inv[rid];
   if (!r) return fail('Resep tidak dikenal.');
   if (!okQty(qty)) return fail('Jumlah harus bilangan bulat 1 sampai 10.000.');
-  if (qty > CAP - state.used) return fail(`Sisa kapasitas hari ini ${CAP - state.used} unit.`);
+  if (qty > capacity() - state.used) return fail(`Sisa kapasitas hari ini ${capacity() - state.used} unit.`);
   for (const [k, need] of Object.entries(r.inputs)) if (state.inv[k].qty < need * qty) return fail(`${PRODUCTS[k].name} tidak cukup (butuh ${need * qty}, ada ${state.inv[k].qty}).`);
   const fee = r2(r.fee * qty);
   if (fee > state.cash) return fail(`Kas tidak cukup untuk biaya operasional ${m2(fee)}.`);
@@ -91,4 +91,18 @@ export function nextDay() {
   }
   log(`Hari ${state.day} dimulai: stok NPC dan harga pasar menyesuaikan`);
   save(state);
+}
+
+// Membangun Roastery di lahan kosong. Biaya = aset (bukan pengeluaran), dicatat sebesar harga beli.
+export function build(slotId) {
+  const slot = SLOTS.find((s) => s.id === slotId);
+  if (!slot) return fail('Lahan tidak valid.');
+  if (state.buildings[slotId]) return fail('Lahan sudah terisi.');
+  const cost = BTYPES.roastery.cost;
+  if (state.cash < cost) return fail(`Kas tidak cukup (butuh ${m2(cost)}).`);
+  state.cash = r2(state.cash - cost);
+  state.buildings[slotId] = { type: 'roastery', level: 1, paid: cost };
+  record({ type: 'build', pid: null, qty: 1, amount: -cost, note: 'Bangun Roastery' });
+  log('Anda membangun Roastery baru');
+  return { ok: true, msg: `Roastery dibangun (${m2(cost)}). Kapasitas produksi ${capacity()}/hari.` };
 }
