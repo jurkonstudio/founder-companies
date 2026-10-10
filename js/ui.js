@@ -15,7 +15,7 @@ export const PAGES = {
 };
 
 const kpi = (label, value, delta, cls = '') =>
-  `<div class="panel kpi"><div class="label">${label}</div><div class="value ${cls}">${value}</div><div class="delta ${tone(delta)}">${pct(delta)} <span class="muted">vs periode lalu</span></div></div>`;
+  `<div class="panel kpi"><div class="label">${label}</div><div class="value ${cls}">${value}</div><div class="delta ${delta === null ? 'muted' : tone(delta)}">${delta === null ? 'Saldo saat ini' : pct(delta) + ' <span class="muted">vs periode lalu</span>'}</div></div>`;
 
 function chart() {
   const { revenue, expenses } = state.series;
@@ -41,7 +41,7 @@ function dashboard() {
   return `
   ${SAMPLE ? '<p class="page-note">Semua angka di halaman ini adalah data contoh Fase 1, belum berasal dari simulasi.</p>' : ''}
   <div class="grid grid-kpi">
-    ${kpi('Kas', money(s.cash), 0)}
+    ${kpi('Kas', money(s.cash), null)}
     ${kpi('Pendapatan', money(s.revenue), d(s.revenue, s.prev.revenue))}
     ${kpi('Pengeluaran', money(s.expenses), d(s.expenses, s.prev.expenses))}
     ${kpi('Laba', money(profit), d(profit, pp), tone(profit))}
@@ -62,6 +62,6 @@ function placeholder(p) {
 }
 
 export function renderPage(id) {
-  const p = PAGES[id] || PAGES.dashboard;
-  return id === 'dashboard' || !PAGES[id] ? dashboard() : placeholder(p);
+  if (!Object.hasOwn(PAGES, id) || id === 'dashboard') return dashboard();
+  return placeholder(PAGES[id]);
 }
