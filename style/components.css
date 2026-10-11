@@ -51,3 +51,25 @@ body.compact .kpi .value{font-size:20px}
 .map [data-slot]:focus-visible .ring{stroke:var(--primary);stroke-width:3}
 .kv{display:flex;justify-content:space-between;gap:12px;padding:9px var(--pad);border-bottom:1px solid var(--border);font-size:14px}
 .kv strong{text-align:right}
+.pi{width:40px;height:40px;display:block}.pi.lg{width:64px;height:64px}.pi.sm{width:22px;height:22px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);text-align:center;min-width:0}
+.tile:hover{border-color:var(--primary);background:#fff}.tile:active{background:var(--border)}
+.tile-ic{position:relative;display:block}
+.tile-badge{position:absolute;right:-12px;top:-6px;min-width:20px;padding:1px 5px;background:var(--primary);color:#fff;font-size:11px;font-weight:700;border-radius:var(--radius)}
+.tile-name{font-size:12px;font-weight:600;line-height:1.2;max-width:100%;overflow-wrap:anywhere;min-height:2.4em;display:flex;align-items:center;justify-content:center}
+.tile-sub{font-size:12px;color:var(--text-2)}
+.cat{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2);margin:14px 0 8px}
+.ticker{display:flex;gap:16px;overflow-x:auto;padding:8px 12px;margin-bottom:10px;background:var(--sidebar);color:#fff;border-radius:var(--radius)}
+.tick{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;font-size:14px}
+.ex-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.pd-head{margin-bottom:10px}
+.pd-title{display:flex;align-items:center;gap:12px;margin-bottom:12px}.pd-title h2{font-size:20px}
+.pd-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.tabs{display:flex;flex:1;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.tabs a{flex:1;text-align:center;padding:11px 0;font-weight:700;background:var(--panel)}
+.tabs a.on{background:var(--primary);color:#fff}
+.trade{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:var(--pad);border-top:1px solid var(--border)}
+.trade label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2)}
+.trade .qty{width:110px;text-align:left}
+.trade .btn{min-height:44px;min-width:96px}
