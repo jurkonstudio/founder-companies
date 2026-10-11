@@ -8,7 +8,7 @@ function valid(d) {
   if (!Number.isFinite(d.cash) || d.cash < 0 || !Array.isArray(d.ledger) || !Array.isArray(d.worth) || !Array.isArray(d.log)) return false;
   if (!d.totals || !d.settings || !d.inv || !d.market) return false;
   if (d.buildings && !Object.values(d.buildings).every((b) => b && BTYPES[b.type] && Number.isFinite(b.paid))) return false;
-  return Object.keys(PRODUCTS).every((id) => d.inv[id] && Number.isFinite(d.inv[id].qty) && d.inv[id].qty >= 0 && d.market[id] && Number.isFinite(d.market[id].price));
+  return Object.keys(PRODUCTS).every((id) => d.inv[id] && Number.isFinite(d.inv[id].qty) && d.inv[id].qty >= 0 && d.market[id] && typeof d.market[id] === 'object');
 }
 
 export function load(fresh) {
@@ -17,7 +17,14 @@ export function load(fresh) {
     if (!raw) return fresh();
     let d = null;
     try { d = JSON.parse(raw); } catch (e) { d = null; }
-    if (valid(d)) { if (!d.buildings) d.buildings = fresh().buildings; return d; } // migrasi save lama
+    if (valid(d)) { // migrasi save lama (kas, stok, dan riwayat dipertahankan)
+      const f = fresh();
+      if (!d.buildings) d.buildings = f.buildings;
+      if (!Array.isArray(d.recent)) d.recent = [];
+      if (!Number.isFinite(d.totals.fees)) d.totals.fees = 0;
+      for (const id of Object.keys(PRODUCTS)) { const m = d.market[id]; if (!Array.isArray(m.asks) || !Array.isArray(m.bids) || !Array.isArray(m.hist)) d.market[id] = f.market[id]; }
+      return d;
+    }
     localStorage.setItem(KEY + '_corrupt', raw); // simpan cadangan, jangan dibuang
     return fresh();
   } catch (e) { ok = false; return fresh(); }

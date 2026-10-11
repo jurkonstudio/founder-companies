@@ -1,0 +1,8 @@
+// Ikon produk buatan sendiri (SVG, viewBox 48x48, gaya datar konsisten dengan peta isometrik).
+const A = {
+  beans: '<ellipse cx="24" cy="41" rx="15" ry="3.5" fill="rgba(0,0,0,.12)"/><path d="M12 17l4-6h16l4 6 3 21c0 2-4 4-15 4S9 40 9 38z" fill="#B88A4A"/><path d="M16 11h16l-1.5 6h-13z" fill="#8A6430"/><ellipse cx="24" cy="29" rx="6.5" ry="9" fill="#4A2F18" transform="rotate(20 24 29)"/><path d="M22 21c3 4 1 9 4 16" stroke="#C9A06A" stroke-width="1.6" fill="none"/>',
+  milk: '<ellipse cx="24" cy="42" rx="12" ry="3" fill="rgba(0,0,0,.12)"/><path d="M15 17l9-8 9 8v24H15z" fill="#F4F6F8" stroke="#9AA5B1" stroke-width="1.5"/><path d="M15 17h18" stroke="#9AA5B1" stroke-width="1.5"/><rect x="19" y="24" width="10" height="10" rx="1.5" fill="#356AE6"/><circle cx="24" cy="29" r="2.6" fill="#fff"/>',
+  ground: '<ellipse cx="24" cy="42" rx="14" ry="3" fill="rgba(0,0,0,.12)"/><path d="M12 13h24l2 28H10z" fill="#C58A22"/><path d="M12 13h24l-.8 6H12.8z" fill="#E6B965"/><path d="M17 33c1-7 13-7 14 0z" fill="#3A2A18"/><path d="M19 27h10" stroke="#FFF1D6" stroke-width="2" stroke-linecap="round"/>',
+  latte: '<ellipse cx="24" cy="43" rx="15" ry="3" fill="rgba(0,0,0,.12)"/><path d="M11 18h24v10c0 6-5.5 11-12 11S11 34 11 28z" fill="#fff" stroke="#9AA5B1" stroke-width="1.5"/><path d="M35 21h2.5a4.5 4.5 0 010 9H34" fill="none" stroke="#9AA5B1" stroke-width="2.5"/><path d="M12 18h22c0-3-4.5-5-11-5s-11 2-11 5z" fill="#C9A06A"/><path d="M18 17c2-1.4 8-1.4 10 0" stroke="#fff" stroke-width="1.6" fill="none"/>'
+};
+export const icon = (id, cls = '') => `<svg class="pi ${cls}" viewBox="0 0 48 48" aria-hidden="true">${A[id] || ''}</svg>`;

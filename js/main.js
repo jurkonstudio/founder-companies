@@ -1,7 +1,7 @@
 import { PAGES, renderPage, searchResults } from './ui.js';
 import { state, setState, createState, PRODUCTS } from './state.js';
 import { load, save, wipe, canSave } from './save.js';
-import { trade, produce, nextDay, build } from './economy.js';
+import { trade, produce, nextDay, build, touchRecent } from './economy.js';
 import { setSel } from './map.js';
 import { m2 } from './utils.js';
 
@@ -43,12 +43,13 @@ function bindSearch() {
 }
 
 function go(keepScroll) {
-  const raw = location.hash.slice(1);
-  const id = ALIAS[raw] || raw;
+  const [r0, ...sub] = location.hash.slice(1).split('/');
+  const id = ALIAS[r0] || r0;
   const page = Object.hasOwn(PAGES, id) ? id : 'dashboard';
+  if (page === 'exchange' && sub[0] && Object.hasOwn(PRODUCTS, sub[0])) touchRecent(sub[0]);
   if (cur && cur !== page) prev = cur;
   cur = page;
-  view.innerHTML = renderPage(page);
+  view.innerHTML = renderPage(page, sub);
   title.textContent = PAGES[page].title;
   document.title = PAGES[page].title + ' · Founder Companies';
   links.forEach((a) => {
@@ -67,6 +68,12 @@ function qty(key) {
   const el = view.querySelector(`[data-qty="${key}"]`);
   return el ? Number(el.value) : NaN;
 }
+function limitOf(key) {
+  const el = view.querySelector(`[data-limit="${key}"]`);
+  if (!el || el.value.trim() === '') return null;
+  const n = Number(el.value);
+  return n > 0 ? n : NaN;
+}
 function done(r) {
   toast(r.msg, r.ok);
   if (r.ok && !canSave()) toast('Peringatan: progres tidak dapat disimpan di perangkat ini.', false);
@@ -80,10 +87,13 @@ view.addEventListener('click', (e) => {
   if (!b) return;
   const { act, id } = b.dataset;
   if (act === 'buy' || act === 'sell') {
-    const n = qty('p:' + id), q = trade(act, id, n, false);
+    const n = qty('p:' + id), lim = limitOf('p:' + id);
+    if (Number.isNaN(lim)) return toast('Batas harga tidak valid.', false);
+    const q = trade(act, id, n, { limit: lim, commit: false });
     if (!q.ok) return toast(q.msg, false);
-    if (!confirm(`${act === 'buy' ? 'Beli' : 'Jual'} ${n} ${PRODUCTS[id].name}\n${m2(q.unit)} per unit, total ${m2(q.total)}. Lanjutkan?`)) return;
-    done(trade(act, id, n));
+    const txt = act === 'buy' ? `Total ${m2(q.total)}` : `Kotor ${m2(q.total)}, biaya pasar ${m2(q.fee)}, bersih ${m2(q.net)}`;
+    if (!confirm(`${act === 'buy' ? 'Beli' : 'Jual'} ${n} ${PRODUCTS[id].name}\nRata-rata ${m2(q.unit)} per unit. ${txt}. Lanjutkan?`)) return;
+    done(trade(act, id, n, { limit: lim }));
   } else if (act === 'produce') {
     done(produce(id, qty('r:' + id)));
   } else if (act === 'build') {

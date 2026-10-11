@@ -1,5 +1,6 @@
 import { state, PRODUCTS, RECIPES, BTYPES, capacity } from './state.js';
 import { mapPage } from './map.js';
+import { icon } from './icons.js';
 import { worth, profit, maxProduce } from './economy.js';
 import { canSave } from './save.js';
 import { money, m2, r2, esc, tone } from './utils.js';
@@ -27,14 +28,14 @@ const invValue = () => r2(Object.values(state.inv).reduce((a, i) => a + i.qty * 
 const TYPE = { buy: 'Beli', sell: 'Jual', production: 'Produksi', build: 'Bangun' };
 const sign = (n) => (n >= 0 ? '+' : '') + m2(n);
 
-function chart(vals) {
+function chart(vals, f = money) {
   if (vals.length < 2) return '<div class="empty">Belum ada riwayat. Lakukan transaksi pertama di Exchange.</div>';
   const W = 600, H = 200, L = 52, B = 12, T = 12;
   let lo = Math.min(...vals), hi = Math.max(...vals);
   if (hi - lo < 1) { hi += 1; lo -= 1; }
   const x = (i) => L + (i * (W - L - 8)) / (vals.length - 1);
   const y = (v) => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
-  const grid = [lo, (lo + hi) / 2, hi].map((v) => `<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border)"/><text x="${L - 6}" y="${y(v) + 3}" text-anchor="end">${money(v)}</text>`).join('');
+  const grid = [lo, (lo + hi) / 2, hi].map((v) => `<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border)"/><text x="${L - 6}" y="${y(v) + 3}" text-anchor="end">${f(v)}</text>`).join('');
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Nilai perusahaan per transaksi">${grid}<polyline fill="none" stroke="var(--primary)" stroke-width="2" points="${vals.map((v, i) => x(i) + ',' + y(v)).join(' ')}"/></svg>`;
 }
 
@@ -49,7 +50,7 @@ function dashboard() {
   <div class="grid grid-kpi">
     ${kpi('Kas', m2(s.cash), 'Saldo saat ini')}
     ${kpi('Pendapatan', m2(s.totals.revenue), 'Total penjualan')}
-    ${kpi('Laba', m2(p), 'Pendapatan - HPP', tone(p))}
+    ${kpi('Laba', m2(p), 'Pendapatan - biaya', tone(p))}
     ${kpi('Nilai perusahaan', m2(worth()), 'Kas + persediaan')}
   </div>
   <div class="grid grid-main">
@@ -62,19 +63,57 @@ function dashboard() {
   </div>`;
 }
 
-function warehouse() {
-  const rows = Object.entries(PRODUCTS).map(([id, p]) => { const i = state.inv[id]; return `<tr><td><strong>${esc(p.name)}</strong><div class="muted small">${esc(p.cat)}${i.qty > 0 && i.qty < 10 ? ' · <span class="neg">Stok rendah</span>' : ''}</div></td><td class="num">${i.qty}</td><td class="num">${m2(i.avg)}</td><td class="num">${m2(i.qty * i.avg)}</td></tr>`; }).join('');
+const bestAsk = (id) => { const m = state.market[id], l = m.asks.find((x) => x.q > 0); return l ? l.p : m.pa; };
+const bestBid = (id) => { const m = state.market[id], l = m.bids.find((x) => x.q > 0); return l ? l.p : m.pb; };
+const arrow = (id) => { const d = bestAsk(id) - state.market[id].prev; return d > 0.004 ? '<span class="pos">▲</span>' : d < -0.004 ? '<span class="neg">▼</span>' : '<span class="muted">–</span>'; };
+const cats = () => [...new Set(Object.values(PRODUCTS).map((p) => p.cat))];
+const tile = (id, href, sub, badge) => `<a class="tile" href="${href}" aria-label="${esc(PRODUCTS[id].name)}"><span class="tile-ic">${icon(id)}${badge ? `<span class="tile-badge">${badge}</span>` : ''}</span><span class="tile-name">${esc(PRODUCTS[id].name)}</span><span class="tile-sub">${sub}</span></a>`;
+const pHead = (id, back, backTo) => `<div class="pd-head"><a class="btn-link" href="${backTo}">‹ ${back}</a></div><div class="pd-title">${icon(id, 'lg')}<div><h2>${esc(PRODUCTS[id].name)}</h2><div class="muted small">${esc(PRODUCTS[id].cat)} · Anda punya ${state.inv[id].qty}</div></div></div>`;
+const quickLinks = (a) => `<div class="quick" style="padding:var(--pad);margin:0">${a.map(([h, t]) => `<a class="btn-link" href="#${h}">${t}</a>`).join('')}</div>`;
+const prodLedger = (id) => { const rows = state.ledger.filter((e) => e.pid === id).slice(0, 8); return rows.length ? `<ul class="feed">${rows.map((e) => `<li><time>Hari ${e.day}</time><span>${TYPE[e.type]} ${e.type === 'sell' ? '-' : '+'}${e.qty}<br><span class="muted small">${esc(e.note)}</span></span></li>`).join('')}</ul>` : '<div class="empty">Belum ada riwayat untuk produk ini.</div>'; };
+
+function whProduct(id) {
+  const i = state.inv[id], r = RECIPES[id];
+  const uses = Object.entries(RECIPES).filter(([, rc]) => rc.inputs[id]).map(([k]) => PRODUCTS[k].name).join(', ');
+  const acts = [['exchange/' + id + '/sell', 'Jual di Exchange'], ['exchange/' + id, 'Beli di Exchange']];
+  if (r) acts.push(['production', 'Produksi']);
+  const kv = (k, v) => `<div class="kv"><span class="muted">${k}</span><strong>${v}</strong></div>`;
+  return `${pHead(id, 'Warehouse', '#warehouse')}
+  <section class="panel" style="margin-bottom:12px">${kv('Stok', i.qty)}${kv('Biaya rata-rata', m2(i.avg))}${kv('Nilai persediaan', m2(i.qty * i.avg))}${kv('Harga beli terbaik NPC', m2(bestBid(id)))}${r ? kv('Dibuat dari', Object.entries(r.inputs).map(([k, v]) => v + ' ' + esc(PRODUCTS[k].name)).join(' + ')) : ''}${uses ? kv('Dipakai untuk', esc(uses)) : ''}${quickLinks(acts)}</section>
+  <section class="panel"><div class="panel-h"><h2>Riwayat produk</h2></div>${prodLedger(id)}</section>`;
+}
+
+function warehouse(sub = []) {
+  if (sub[0] && Object.hasOwn(PRODUCTS, sub[0])) return whProduct(sub[0]);
+  const owned = Object.keys(PRODUCTS).filter((id) => state.inv[id].qty > 0);
   const hist = state.ledger.filter((e) => e.pid).slice(0, 10).map((e) => `<li><time>Hari ${e.day}</time><span>${TYPE[e.type]} ${e.type === 'sell' ? '-' : '+'}${e.qty} ${esc(PRODUCTS[e.pid].name)}<br><span class="muted small">${esc(e.note)}</span></span></li>`).join('');
-  const empty = Object.values(state.inv).every((i) => i.qty === 0);
   return `${quick(['exchange', 'production'])}
-  <section class="panel" style="margin-bottom:12px"><div class="panel-h"><h2>Persediaan</h2><span class="muted small">Nilai ${m2(invValue())}</span></div>${empty ? '<div class="empty">Gudang kosong. Beli bahan baku di Exchange.</div>' : ''}<div class="table-wrap"><table><thead><tr><th>Produk</th><th class="num">Stok</th><th class="num">Biaya rata-rata</th><th class="num">Nilai</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  <section class="panel" style="margin-bottom:12px"><div class="panel-h"><h2>Persediaan</h2><span class="muted small">Nilai ${m2(invValue())}</span></div>${owned.length ? `<div class="panel-b"><div class="tiles">${owned.map((id) => tile(id, '#warehouse/' + id, m2(state.inv[id].qty * state.inv[id].avg), state.inv[id].qty)).join('')}</div></div>` : '<div class="empty">Gudang kosong. Beli bahan baku di Exchange.</div>'}</section>
   <section class="panel"><div class="panel-h"><h2>Pergerakan stok</h2></div>${hist ? `<ul class="feed">${hist}</ul>` : '<div class="empty">Belum ada pergerakan stok.</div>'}</section>`;
 }
 
-function exchange() {
-  const rows = Object.entries(PRODUCTS).map(([id, p]) => { const m = state.market[id]; return `<tr><td><strong>${esc(p.name)}</strong><div class="muted small">${esc(p.cat)} · pasar ${m2(m.price)}<br>NPC jual ${m.stock} · NPC beli ${m.room} · Anda punya ${state.inv[id].qty}</div></td><td class="num">${m2(m.price * 1.03)}</td><td class="num">${m2(m.price * 0.97)}</td><td><div class="row-actions"><input class="qty" type="number" inputmode="numeric" min="1" step="1" value="1" data-qty="p:${id}" aria-label="Jumlah ${esc(p.name)}"><button class="btn btn-primary" data-act="buy" data-id="${id}">Beli</button><button class="btn" data-act="sell" data-id="${id}">Jual</button></div></td></tr>`; }).join('');
-  return `<p class="page-note">Pasar simulasi lokal dengan NPC, bukan pasar online real-time. Harga bergerak sesuai jumlah yang Anda beli atau jual.</p>
-  <section class="panel"><div class="panel-h"><h2>Pasar · Hari ${state.day}</h2><button class="btn" data-act="nextday">Hari berikutnya</button></div><div class="table-wrap"><table><thead><tr><th>Produk</th><th class="num">Beli @</th><th class="num">Jual @</th><th class="num">Jumlah</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+function exProduct(id, side) {
+  const m = state.market[id], ids = Object.keys(PRODUCTS), i = ids.indexOf(id), sfx = side === 'sell' ? '/sell' : '';
+  const buy = side === 'buy', list = (buy ? m.asks : m.bids).filter((l) => l.q > 0);
+  const rows = list.map((l) => `<tr><td>${esc(l.s)}</td><td class="num">${l.q}</td><td class="num"><strong>${m2(l.p)}</strong></td></tr>`).join('');
+  const hist = m.hist.length >= 2 ? `<section class="panel" style="margin-top:12px"><div class="panel-h"><h2>Riwayat harga beli terbaik</h2><span class="muted small">per hari</span></div><div class="panel-b">${chart(m.hist, m2)}</div></section>` : '';
+  return `${pHead(id, 'Exchange', '#exchange')}
+  <div class="pd-nav"><a class="btn-link" href="#exchange/${ids[(i + ids.length - 1) % ids.length]}${sfx}" aria-label="Produk sebelumnya">«</a><div class="tabs"><a class="${buy ? 'on' : ''}" href="#exchange/${id}">Beli</a><a class="${buy ? '' : 'on'}" href="#exchange/${id}/sell">Jual</a></div><a class="btn-link" href="#exchange/${ids[(i + 1) % ids.length]}${sfx}" aria-label="Produk berikutnya">»</a></div>
+  <section class="panel"><div class="panel-h"><h2>${buy ? 'Penawaran jual NPC' : 'Penawaran beli NPC'}</h2><span class="muted small">${buy ? 'termurah dulu' : 'tertinggi dulu'}</span></div>${rows ? `<div class="table-wrap"><table><thead><tr><th>Perusahaan (NPC)</th><th class="num">Jumlah</th><th class="num">Harga</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">Tidak ada penawaran saat ini. Lanjutkan ke hari berikutnya.</div>'}
+  <div class="trade"><label>Jumlah<input class="qty" type="number" inputmode="numeric" min="1" step="1" value="1" data-qty="p:${id}"></label><label>${buy ? 'Batas harga maks (opsional)' : 'Harga min (opsional)'}<input class="qty" type="number" inputmode="decimal" min="0" step="0.01" placeholder="pasar" data-limit="p:${id}"></label><button class="btn btn-primary" data-act="${side}" data-id="${id}">${buy ? 'BELI' : 'JUAL'}</button></div>
+  <p class="muted small" style="padding:0 var(--pad) var(--pad)">${buy ? 'Membeli dari penawaran termurah lebih dulu. Jika batas harga diisi, hanya penawaran dengan harga di bawah atau sama dengan batas yang dipakai (tidak ada pesanan yang menggantung).' : 'Menjual ke penawaran beli tertinggi lebih dulu. Biaya pasar 3% dibayar penjual.'} Pasar simulasi NPC, bukan pemain nyata.</p></section>
+  ${hist}<section class="panel" style="margin-top:12px"><div class="panel-h"><h2>Riwayat transaksi</h2></div>${prodLedger(id)}</section>`;
+}
+
+function exchange(sub = []) {
+  if (sub[0] && Object.hasOwn(PRODUCTS, sub[0])) return exProduct(sub[0], sub[1] === 'sell' ? 'sell' : 'buy');
+  const ids = Object.keys(PRODUCTS), px = (id) => m2(bestAsk(id)) + ' ' + arrow(id);
+  const ticker = ids.map((id) => `<a class="tick" href="#exchange/${id}">${icon(id, 'sm')}<span>${m2(bestAsk(id))}</span>${arrow(id)}</a>`).join('');
+  const groups = cats().map((c) => `<h2 class="cat">${esc(c)}</h2><div class="tiles">${ids.filter((id) => PRODUCTS[id].cat === c).map((id) => tile(id, '#exchange/' + id, px(id))).join('')}</div>`).join('');
+  const rec = state.recent.length ? `<h2 class="cat">Terakhir dibuka</h2><div class="tiles">${state.recent.map((id) => tile(id, '#exchange/' + id, px(id))).join('')}</div>` : '';
+  return `<div class="ticker" aria-label="Harga beli terbaik">${ticker}</div>
+  <div class="ex-bar"><span class="muted small">Pasar simulasi NPC · Hari ${state.day}</span><button class="btn" data-act="nextday">Hari berikutnya</button></div>
+  ${groups}${rec}`;
 }
 
 function production() {
@@ -89,10 +128,10 @@ function finance() {
   return `<div class="grid grid-kpi">
     ${kpi('Kas', m2(s.cash), 'Saldo saat ini')}
     ${kpi('Pendapatan', m2(s.totals.revenue), 'Total penjualan')}
-    ${kpi('HPP', m2(s.totals.cogs), 'Biaya barang terjual')}
-    ${kpi('Laba', m2(p), 'Pendapatan - HPP', tone(p))}
+    ${kpi('Biaya', m2(s.totals.cogs + (s.totals.fees || 0)), 'HPP + biaya pasar')}
+    ${kpi('Laba', m2(p), 'Pendapatan - biaya', tone(p))}
   </div>
-  <p class="page-note">Pembelian bahan dan biaya produksi masuk ke persediaan (nilai ${m2(invValue())}) dan baru menjadi biaya (HPP) saat barang terjual, memakai biaya rata-rata. Biaya bangunan adalah aset, bukan HPP.</p>
+  <p class="page-note">Pembelian bahan dan biaya produksi masuk ke persediaan (nilai ${m2(invValue())}) dan baru menjadi biaya (HPP) saat barang terjual, memakai biaya rata-rata. Biaya pasar 3% dipotong saat menjual (HPP ${m2(s.totals.cogs)} + biaya pasar ${m2(s.totals.fees || 0)}). Biaya bangunan adalah aset, bukan HPP.</p>
   <section class="panel"><div class="panel-h"><h2>Riwayat transaksi</h2></div>${rows ? `<div class="table-wrap"><table><thead><tr><th>Hari</th><th>Jenis</th><th>Produk</th><th class="num">Jml</th><th class="num">Kas</th><th class="num">Saldo</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">Belum ada transaksi.</div>'}</section>`;
 }
 
@@ -120,14 +159,14 @@ export function searchResults(q) {
   const blds = SLOTS_ENTRIES().filter(([, b]) => (BTYPES[b.type].name + ' bangunan').toLowerCase().includes(t));
   if (!prods.length && !pages.length && !blds.length) return `<div class="panel"><div class="empty">Tidak ditemukan hasil untuk "${esc(q.trim())}".</div></div>`;
   const grp = (h, items) => items ? `<section class="panel" style="margin-bottom:12px"><div class="panel-h"><h2>${h}</h2></div>${items}</section>` : '';
-  return grp('Produk (' + prods.length + ')', prods.map(([id, p]) => `<a class="result" href="#exchange"><span>${esc(p.name)}</span><span class="muted small">${esc(p.cat)} · stok ${state.inv[id].qty}</span></a>`).join('')) +
+  return grp('Produk (' + prods.length + ')', prods.map(([id, p]) => `<a class="result" href="#exchange/${id}"><span>${esc(p.name)}</span><span class="muted small">${esc(p.cat)} · stok ${state.inv[id].qty}</span></a>`).join('')) +
     grp('Bangunan (' + blds.length + ')', blds.map(([id, b]) => `<a class="result" href="#map"><span>${esc(BTYPES[b.type].name)}</span><span class="muted small">Level ${b.level}</span></a>`).join('')) +
     grp('Halaman (' + pages.length + ')', pages.map(([id, p]) => `<a class="result" href="#${id}"><span>${esc(p.title)}</span><span class="muted small">${p.tahap ? 'Belum tersedia' : 'Tersedia'}</span></a>`).join(''));
 }
 
 const SLOTS_ENTRIES = () => Object.entries(state.buildings);
 const VIEWS = { map: mapPage, dashboard, warehouse, exchange, production, finance, settings, search, chat };
-export function renderPage(id) {
+export function renderPage(id, sub = []) {
   if (!Object.hasOwn(PAGES, id)) return dashboard();
-  return VIEWS[id] ? VIEWS[id]() : placeholder(PAGES[id]);
+  return VIEWS[id] ? VIEWS[id](sub) : placeholder(PAGES[id]);
 }
